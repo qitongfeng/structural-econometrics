@@ -1,0 +1,214 @@
+
+\documentclass[11pt]{article}
+\usepackage{lscape}
+\usepackage{amsfonts}
+\usepackage{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+\setcounter{MaxMatrixCols}{10}
+\newtheorem{theorem}{Theorem}
+\newtheorem{acknowledgement}[theorem]{Acknowledgement}
+\newtheorem{algorithm}[theorem]{Algorithm}
+\newtheorem{axiom}[theorem]{Axiom}
+\newtheorem{case}[theorem]{Case}
+\newtheorem{claim}[theorem]{Claim}
+\newtheorem{conclusion}[theorem]{Conclusion}
+\newtheorem{condition}[theorem]{Condition}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{criterion}[theorem]{Criterion}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{exercise}[theorem]{Exercise}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{notation}[theorem]{Notation}
+\newtheorem{problem}[theorem]{Problem}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{solution}[theorem]{Solution}
+\newtheorem{summary}[theorem]{Summary}
+\newenvironment{proof}[1][Proof]{\noindent\textbf{#1.} }{\ \rule{0.5em}{0.5em}}
+
+\geometry{left=1.3in, right=1.3in, top=1.2in, bottom=1.2in}
+
+\begin{document}
+
+\begin{flushright}
+Econometrics III 47-813
+
+Spring 2026
+
+Robert A. Miller
+\end{flushright}
+
+\begin{center}
+\textbf{ASSIGNMENT 6 (Structural Estimation of Auctions)}
+\end{center}
+
+\vspace{0.3cm}
+
+\noindent \textbf{Overview.}
+This assignment uses classroom experiment data to study nonparametric and structural estimation of first-price auctions. The three questions build on each other: (1)~nonparametric identification under correct specification, (2)~observational equivalence and testing, and (3)~parametric structural estimation when the nonparametric approach fails. A bonus question tests the strategic equivalence between sealed-bid and Dutch auction formats.
+
+\vspace{0.2cm}
+
+\noindent \textbf{Instructions.}
+Work individually or in pairs. Submit a self-contained report with documented code (Jupyter notebook or appendix). Use classroom experiment data where available; otherwise use simulated data from the provided template.
+
+\vspace{0.4cm}
+
+\noindent\textbf{Setup.}
+Throughout, $n$ risk-neutral bidders compete for a single indivisible object. The experiment uses $n = 5$ and $R = 10$ rounds per treatment.
+
+\medskip
+
+\noindent\textit{Treatment~1: FPSB Procurement (IPV).}
+A buyer solicits sealed bids from $n$ suppliers with private costs $c_i \stackrel{\text{i.i.d.}}{\sim} F$ on $[\underline{c}, \bar{c}]$. The lowest bidder wins and is paid her bid; profit is $b_i - c_i$. In the experiment, $c_i \sim \text{Uniform}[200, 400]$.
+
+\medskip
+
+\noindent\textit{Treatments~2 \& 3: FPSB and Dutch (CV).}
+A common value $V \sim \text{Uniform}[500, 1000]$ with private signals $s_i = V + \varepsilon_i$, $\varepsilon_i \stackrel{\text{i.i.d.}}{\sim} \text{Uniform}[-100, 100]$. The highest bidder wins and pays her bid; payoff is $V - b_i$. Each CV round was conducted in both sealed-bid (Treatment~2) and Dutch descending-clock (Treatment~3) formats, providing within-round paired observations.
+
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+& \textbf{IPV (Procurement)} & \textbf{CV (Common Value)} \\
+\midrule
+\textbf{FPSB} & Treatment 1 & Treatment 2 \\
+\textbf{Dutch} & --- & Treatment 3 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+
+%==============================================================================
+\vspace{0.3cm}
+
+\noindent\textbf{Question 1: Nonparametric Cost Recovery under IPV.}
+
+\smallskip
+
+\noindent\textit{Goal.} Adapt the GPV (Guerre, Perrigne, Vuong 2000) nonparametric inversion to the procurement setting and apply it to Treatment~1 data. The key difference from a standard (highest-bid-wins) auction is that procurement bidders shade \emph{upward}: derive the appropriate first-order condition and resulting inversion formula, then implement it.
+
+\begin{itemize}[leftmargin=*]
+
+\item[(a)] Derive the symmetric Bayes--Nash equilibrium first-order condition for the procurement auction. Show that the inversion mapping from bids to costs takes the form
+$$
+c_i \;=\; b_i \;-\; \frac{1 - G(b_i)}{(n-1)\,g(b_i)},
+$$
+where $G$ and $g$ are the CDF and density of equilibrium bids. Explain the economics of upward shading.
+
+\item[(b)] Implement the inversion using kernel density estimation of $G$ and $g$. Since the experiment provides both bids and true costs, evaluate how well the method recovers the latent cost distribution (plots and error metrics).
+
+\item[(c)] Derive the closed-form equilibrium bid function $\beta(c)$ for $c_i \sim \text{Uniform}[\underline{c}, \bar{c}]$, and verify that the inversion recovers $c$ analytically. Compare $\beta(c)$ to observed bidding behavior.
+
+\item[(d)] State the Revenue Equivalence Theorem for procurement. Compute the theoretical expected buyer payment under FPSB and second-price procurement, and compare with observed payments in Treatment~1.
+
+\end{itemize}
+
+% \noindent\textit{References:} GPV (2000) for the inversion methodology; Paarsch and Hong (2006, Ch.~2--3) for procurement adaptations.
+
+
+%==============================================================================
+\vspace{0.3cm}
+
+\noindent\textbf{Question 2: Observational Equivalence and Testing.}
+
+\smallskip
+
+\noindent\textit{Goal.} Demonstrate that an econometrician who observes only bids cannot distinguish IPV from CV when $n$ is fixed (Laffont and Vuong, 1996), and then show how variation in the number of bidders breaks this equivalence (Haile, Hong, and Shum, 2003).
+
+\begin{itemize}[leftmargin=*]
+
+\item[(a)] Apply the GPV inversion to \emph{both} FPSB datasets --- the procurement inversion for Treatment~1 and the standard inversion $v_i = b_i + G(b_i)/[(n-1)g(b_i)]$ for Treatment~2. Can you tell from the recovered pseudo-values alone which dataset is IPV and which is CV?
+
+\item[(b)] Now use the observed true costs (Treatment~1) and common value/signals (Treatment~2) to evaluate the accuracy of the pseudo-values. In the CV case, characterize what the pseudo-values are actually estimating and explain the source of the bias (relate to the winner's curse).
+
+\item[(c)] Relate parts (a)--(b) to the observational equivalence result in Laffont and Vuong (1996). What source of variation could break this equivalence?
+
+\item[(d)] Using simulated data with $n \in \{3, 5, 7, 10\}$, test whether the recovered pseudo-value distribution depends on $n$, separately for IPV and CV. Explain the difference and propose a formal test following Haile, Hong, and Shum (2003).
+
+\end{itemize}
+
+% \noindent\textit{References:} Laffont and Vuong (1996) for observational equivalence; Haile, Hong, and Shum (2003) for testing; Athey and Haile (2007, \S3) for a survey.
+
+
+%==============================================================================
+\vspace{0.3cm}
+
+\noindent\textbf{Question 3: Structural Estimation of the Common Value Model.}
+
+\smallskip
+
+\noindent\textit{Goal.} When the data-generating process is known to be CV, the nonparametric GPV approach no longer applies. This question asks you to estimate the structural parameters $\theta = (\omega, \delta)$ of the CV model $V \sim \text{Uniform}[0, \omega]$, $\varepsilon_i \sim \text{Uniform}[-\delta, \delta]$ using both signal data and bid data alone. (For the experiment, work with the shifted value $V' = V - 500$ so that $\omega = 500$, or estimate $\omega$ directly.)
+
+\begin{itemize}[leftmargin=*]
+
+\item[(a)] \textbf{Estimation with signals.} Derive $\text{Var}(s_i)$ and $\text{Cov}(s_i, s_j)$ as functions of $(\omega, \delta)$. Use these two moment conditions to construct a method-of-moments estimator and report estimates.
+
+\item[(b)] \textbf{Estimation from bids only.} Implement a simulated method of moments (SMM) estimator: for candidate $(\omega, \delta)$, compute the equilibrium bid function, simulate auctions, and match moments of the simulated and observed bid distributions. The equilibrium for this model is characterized by Wilson~(1977); see Paarsch and Hong~(2006, Ch.~4) for the derivation and Laffont, Ossard, and Vuong~(1995) for the SMM methodology.
+
+\item[(c)] Compare the estimates and efficiency of (a) and (b). Which is more practical when signals are unobserved?
+
+\item[(d)] \textbf{Misspecification bias.} Using your SMM simulator, generate CV auction data and apply the IPV-GPV inversion. Characterize the resulting pseudo-value distribution and plot the bias as a function of $\delta/\omega$. What happens as $\delta \to 0$ and as $\delta$ grows large?
+
+\end{itemize}
+
+% \noindent\textit{References:} Wilson (1977) for the CV equilibrium; Laffont, Ossard, and Vuong (1995) for simulation-based estimation; Bajari and Hortaçsu (2005) for validation against experimental data; Paarsch and Hong (2006, Ch.~4).
+
+
+% %==============================================================================
+% \vspace{0.3cm}
+
+% \noindent\textbf{Bonus: Strategic Equivalence of FPSB and Dutch Auctions.}
+
+% \smallskip
+
+% \noindent\textit{Goal.} Theory predicts that FPSB and Dutch auctions are strategically equivalent. The within-round paired data from Treatments~2 and~3 provide a direct test.
+
+% \begin{itemize}[leftmargin=*]
+
+% \item[(a)] State the strategic equivalence result and the assumptions under which it holds.
+
+% \item[(b)] Compare individual-level FPSB and Dutch bids within each round. Test the null of identical distributions using a paired test (e.g., Wilcoxon signed-rank).
+
+% \item[(c)] Discuss behavioral explanations for any systematic deviations. See Cox, Roberson, and Smith~(1982) and Kagel and Levin~(2002, Ch.~5) for the experimental literature on the FPSB--Dutch gap.
+
+% \end{itemize}
+
+
+%==============================================================================
+\vspace{0.5cm}
+
+\noindent\textbf{References.}
+
+\smallskip
+
+% \noindent Athey, S.\ and Haile, P. (2007). Nonparametric Approaches to Auctions. \textit{Handbook of Econometrics}, Vol.\ 6A.
+
+% \noindent Bajari, P.\ and Hortaçsu, A. (2005). Are Structural Estimates of Auction Models Reasonable? Evidence from Experimental Data. \textit{Journal of Political Economy}, 113(4):703--741.
+
+% \noindent Cox, J., Roberson, B., and Smith, V. (1982). Theory and Behavior of Single Object Auctions. \textit{Research in Experimental Economics}, Vol.\ 2.
+
+\noindent Guerre, E., Perrigne, I., and Vuong, Q. (2000). Optimal Nonparametric Estimation of First-Price Auctions. \textit{Econometrica}, 68(3):525--574.
+
+\noindent Haile, P., Hong, H., and Shum, M. (2003). Nonparametric Tests for Common Values in First-Price Sealed-Bid Auctions. \textit{NBER Working Paper} No.\ 10105.
+
+% \noindent Kagel, J.\ and Levin, D. (2002). \textit{Common Value Auctions and the Winner's Curse}. Princeton University Press.
+
+\noindent Laffont, J.-J.\ and Vuong, Q. (1996). Structural Analysis of Auction Data. \textit{American Economic Review}, 86(2):414--420.
+
+\noindent Laffont, J.-J., Ossard, H., and Vuong, Q. (1995). Econometrics of First-Price Auctions. \textit{Econometrica}, 63(4):953--980.
+
+% \noindent Paarsch, H. (1992). Deciding Between the Common and Private Value Paradigms in Empirical Models of Auctions. \textit{Journal of Econometrics}, 51(1--2):191--215.
+
+\noindent Paarsch, H.\ and Hong, H. (2006). \textit{An Introduction to the Structural Econometrics of Auction Data}. MIT Press.
+
+\noindent Wilson, R. (1977). A Bidding Model of Perfect Competition. \textit{Review of Economic Studies}, 44(3):511--518.
+
+\end{document}
